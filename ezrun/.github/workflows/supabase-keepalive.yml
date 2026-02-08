@@ -1,0 +1,46 @@
+name: Supabase Keep-Alive Ping
+
+on:
+  schedule:
+    # Runs every 6 days at 3:00 AM UTC (to stay well within the 7-day limit)
+    - cron: '0 3 */6 * *'
+  
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Ping Supabase Database
+        run: |
+          echo "Pinging Supabase to prevent inactivity..."
+          
+          # Make a simple REST API call to Supabase
+          # This queries the users table (or any table you have)
+          # Even if it returns 0 results, it counts as activity
+          
+          response=$(curl -s -w "\n%{http_code}" \
+            -X GET \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/users?select=id&limit=1")
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | head -n-1)
+          
+          echo "HTTP Status Code: $http_code"
+          echo "Response: $body"
+          
+          # Check if request was successful (200-299 range)
+          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+            echo "✅ Successfully pinged Supabase database!"
+          else
+            echo "⚠️ Ping returned status $http_code, but that's okay - it still counts as activity!"
+          fi
+          
+      - name: Log completion
+        run: |
+          echo "Keep-alive ping completed at $(date)"
+          echo "Next scheduled run: 6 days from now"

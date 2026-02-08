@@ -1,0 +1,23 @@
+<resources>
+    <color name="widget_blue_start">#FF00D4FF</color>
+    <color name="widget_blue_end">#FF00A8CC</color>
+
+    <color name="widget_purple_start">#FF7C3AED</color>
+    <color name="widget_purple_end">#FF9F67FF</color>
+
+    <color name="widget_green_start">#FF00FF88</color>
+    <color name="widget_green_end">#FF00D4A5</color>
+
+    <color name="widget_orange_start">#FFFF8A00</color>
+    <color name="widget_orange_end">#FFFFB347</color>
+
+    <color name="widget_pink_start">#FFFF6B9D</color>
+    <color name="widget_pink_end">#FFFF8ACB</color>
+
+    <color name="widget_cyan_start">#FF00D4FF</color>
+    <color name="widget_cyan_end">#FF6FE7FF</color>
+
+    <color name="widget_glass_start">#33FFFFFF</color>
+    <color name="widget_glass_end">#0DFFFFFF</color>
+    <color name="widget_glass_border">#33FFFFFF</color>
+</resources>
