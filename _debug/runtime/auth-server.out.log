@@ -1,0 +1,10 @@
+
+> ezrun-auth-server@1.0.0 dev
+> tsx watch src/index.ts
+
+✅ Database pool created
+   Trusted origins: [http://localhost:3000, http://192.168.1.23:3000, ezrun://, ezrun://auth-callback]
+✅ Better Auth server listening on:
+   - http://localhost:3000
+   - http://0.0.0.0:3000 (all interfaces)
+   - Check your LAN IP with: ipconfig
