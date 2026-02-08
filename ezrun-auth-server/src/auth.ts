@@ -19,11 +19,17 @@ if (!betterAuthUrl) {
   throw new Error("BETTER_AUTH_URL is required");
 }
 
-const trustedOrigins = (process.env.TRUSTED_ORIGINS ?? "")
+const configuredTrustedOrigins = (process.env.TRUSTED_ORIGINS ?? "")
   .split(",")
   .map((origin) => origin.trim())
   .filter((origin) => origin.length > 0);
-if (trustedOrigins.length === 0) {
+
+const defaultMobileTrustedOrigins = ["ezrun://", "ezrun://auth-callback", "flutter://", "exp://"];
+const trustedOrigins = Array.from(
+  new Set([...configuredTrustedOrigins, ...defaultMobileTrustedOrigins])
+);
+
+if (configuredTrustedOrigins.length === 0) {
   console.warn("⚠️ No TRUSTED_ORIGINS configured; cross-origin browser requests will be blocked.");
 }
 

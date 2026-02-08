@@ -14,11 +14,13 @@ const betterAuthUrl = process.env.BETTER_AUTH_URL;
 if (!betterAuthUrl) {
     throw new Error("BETTER_AUTH_URL is required");
 }
-const trustedOrigins = (process.env.TRUSTED_ORIGINS ?? "")
+const configuredTrustedOrigins = (process.env.TRUSTED_ORIGINS ?? "")
     .split(",")
     .map((origin) => origin.trim())
     .filter((origin) => origin.length > 0);
-if (trustedOrigins.length === 0) {
+const defaultMobileTrustedOrigins = ["ezrun://", "ezrun://auth-callback", "flutter://", "exp://"];
+const trustedOrigins = Array.from(new Set([...configuredTrustedOrigins, ...defaultMobileTrustedOrigins]));
+if (configuredTrustedOrigins.length === 0) {
     console.warn("⚠️ No TRUSTED_ORIGINS configured; cross-origin browser requests will be blocked.");
 }
 const disableCsrfCheck = process.env.DISABLE_CSRF_CHECK === "true";
@@ -69,11 +71,8 @@ export const auth = betterAuth({
             sendVerificationOnSignUp: true,
             async sendVerificationOTP({ email, otp, type }) {
                 console.log(`📧 Sending OTP email to ${email} (${type})`);
-                // Avoid awaiting to reduce timing side-channels; log failures.
-                void sendOtpEmail({ to: email, otp, type }).catch((err) => {
-                    console.error("❌ Failed to send OTP email:", err.message);
-                    console.error("   Full error:", err);
-                });
+                await sendOtpEmail({ to: email, otp, type });
+                console.log(`✅ OTP email sent successfully to ${email}`);
             }
         })
     ]

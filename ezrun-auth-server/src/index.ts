@@ -9,13 +9,61 @@ const app = express();
 const port = Number(process.env.PORT ?? 3000);
 const host = "0.0.0.0"; // Listen on all network interfaces
 const isProduction = process.env.NODE_ENV === "production";
-const trustedOrigins = (process.env.TRUSTED_ORIGINS ?? "")
+const configuredTrustedOrigins = (process.env.TRUSTED_ORIGINS ?? "")
   .split(",")
   .map((item) => item.trim())
   .filter((item) => item.length > 0);
+const defaultMobileTrustedOrigins = ["ezrun://", "ezrun://auth-callback", "flutter://", "exp://"];
+const trustedOrigins = Array.from(
+  new Set([...configuredTrustedOrigins, ...defaultMobileTrustedOrigins])
+);
 // Mobile/native clients often do not send the Origin header.
 // Allow by default, and let deployments explicitly disable if needed.
 const allowNoOrigin = process.env.ALLOW_NO_ORIGIN !== "false";
+const mobileOriginFallback = process.env.MOBILE_ORIGIN_FALLBACK ?? "ezrun://";
+
+function firstHeaderValue(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) {
+    return value[0]?.trim() ?? "";
+  }
+  return value?.trim() ?? "";
+}
+
+function isTrustedOrigin(origin: string): boolean {
+  return origin.length > 0 && trustedOrigins.includes(origin);
+}
+
+function resolveMobileOrigin(req: express.Request): string {
+  const candidates = [
+    firstHeaderValue(req.headers["x-mobile-origin"]),
+    firstHeaderValue(req.headers["flutter-origin"]),
+    firstHeaderValue(req.headers["expo-origin"])
+  ];
+
+  for (const candidate of candidates) {
+    if (isTrustedOrigin(candidate)) {
+      return candidate;
+    }
+  }
+
+  const userAgent = firstHeaderValue(req.headers["user-agent"]);
+  if (userAgent.includes("FlutterBetterAuth") && isTrustedOrigin(mobileOriginFallback)) {
+    return mobileOriginFallback;
+  }
+
+  return "";
+}
+
+// ===== MOBILE ORIGIN NORMALIZATION =====
+app.use((req, _res, next) => {
+  if (!req.headers.origin) {
+    const fallbackOrigin = resolveMobileOrigin(req);
+    if (fallbackOrigin) {
+      req.headers.origin = fallbackOrigin;
+    }
+  }
+  next();
+});
 
 // ===== REQUEST LOGGING MIDDLEWARE =====
 app.use((req, _res, next) => {

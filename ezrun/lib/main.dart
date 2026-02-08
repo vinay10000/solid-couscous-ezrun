@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_better_auth/flutter_better_auth.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -45,7 +46,10 @@ void main() async {
   // Initialize Better Auth
   final betterAuthUrl = await _resolveBetterAuthBaseUrl();
   debugPrint('Better Auth URL: $betterAuthUrl');
-  await FlutterBetterAuth.initialize(url: betterAuthUrl);
+  await FlutterBetterAuth.initialize(
+    url: betterAuthUrl,
+    dio: _buildBetterAuthDio(),
+  );
   await AuthService().hydrate();
 
   // Initialize Mapbox
@@ -107,8 +111,33 @@ class EzrunApp extends ConsumerWidget {
   }
 }
 
+Dio _buildBetterAuthDio() {
+  final headers = <String, dynamic>{
+    'Content-Type': 'application/json',
+    'User-Agent': 'FlutterBetterAuth/1.0.0',
+    'flutter-origin': 'flutter://',
+    'expo-origin': 'exp://',
+    'x-skip-oauth-proxy': true,
+  };
+
+  if (!kIsWeb) {
+    final nativeOrigin = '${ApiConstants.betterAuthCallbackScheme}://';
+    headers['origin'] = nativeOrigin;
+    headers['referer'] = nativeOrigin;
+    headers['x-mobile-origin'] = nativeOrigin;
+  }
+
+  return Dio(
+    BaseOptions(
+      headers: headers,
+      validateStatus: (status) => status != null && status < 300,
+    ),
+  );
+}
+
 Future<String> _resolveBetterAuthBaseUrl() async {
-  final envUrl = dotenv.maybeGet('BETTER_AUTH_BASE_URL') ??
+  final envUrl =
+      dotenv.maybeGet('BETTER_AUTH_BASE_URL') ??
       const String.fromEnvironment(
         'BETTER_AUTH_BASE_URL',
         defaultValue: 'https://solid-couscous-ezrun.onrender.com/api/auth',
