@@ -24,6 +24,15 @@ app.use((req, _res, next) => {
   next();
 });
 
+// ===== PUBLIC ROUTES (NO CORS REQUIRED) =====
+app.get("/", (_req, res) => {
+  res.json({ service: "ezrun-auth-server", status: "ok" });
+});
+
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
 // ===== CORS WITH BETTER ERROR LOGGING =====
 app.use(
   cors({
@@ -43,7 +52,7 @@ app.use(
       if (trustedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      
+
       console.error(`❌ CORS BLOCKED: Origin "${origin}" not in trusted list`);
       return callback(new Error("Origin not allowed by CORS"));
     },
@@ -53,11 +62,6 @@ app.use(
 
 // ===== BETTER AUTH ROUTES =====
 app.use("/api/auth", toNodeHandler(auth));
-
-// ===== HEALTH CHECK =====
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
-});
 
 // ===== ERROR HANDLING MIDDLEWARE (MUST BE LAST) =====
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
