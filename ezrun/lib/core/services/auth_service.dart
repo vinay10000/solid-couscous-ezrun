@@ -4,6 +4,7 @@ import 'package:flutter_better_auth/flutter_better_auth.dart' hide User;
 import 'package:flutter_better_auth/core/models/user/user.dart' as better_auth;
 import 'package:flutter_better_auth/plugins/email_otp/email_otp_plugin.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 import '../constants/api_constants.dart';
 
@@ -140,6 +141,33 @@ class AuthService {
       type: 'email-verification',
     );
     _requireData(result, fallback: 'Failed to send OTP. Please try again.');
+  }
+
+  /// Passwordless email auth: creates account if new, sends OTP.
+  ///
+  /// 1. Try to sign up with a random password (new user → auto-sends OTP).
+  /// 2. If user already exists, just send OTP.
+  /// 3. Stage Supabase sync credentials for after OTP verification.
+  Future<void> initiateEmailAuth({required String email}) async {
+    final generatedPassword = const Uuid().v4();
+
+    try {
+      // Attempt sign-up (creates account + sends OTP for new users)
+      await signUp(
+        email: email,
+        password: generatedPassword,
+        username: 'Runner',
+      );
+      // signUp already stages Supabase sync
+    } catch (e) {
+      // User likely already exists — just send OTP
+      await sendEmailOtp(email: email);
+      _stageSupabaseSyncForOtp(
+        email: email,
+        password: generatedPassword,
+        username: _currentUser?.name ?? 'Runner',
+      );
+    }
   }
 
   /// Stage credentials so Supabase provisioning can happen only after OTP verify.

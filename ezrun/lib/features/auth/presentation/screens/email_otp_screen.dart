@@ -16,8 +16,8 @@ class EmailOtpArgs {
 
   const EmailOtpArgs({
     required this.email,
-    required this.password,
-    required this.isSignUp,
+    this.password,
+    this.isSignUp = false,
   });
 }
 
@@ -141,11 +141,6 @@ class _EmailOtpScreenState extends State<EmailOtpScreen>
 
     try {
       await _authService.verifyEmailOtp(email: widget.args.email, otp: _otp);
-
-      final password = widget.args.password;
-      if (password != null && password.isNotEmpty) {
-        await _authService.signIn(email: widget.args.email, password: password);
-      }
 
       if (!mounted) return;
       context.go('/');

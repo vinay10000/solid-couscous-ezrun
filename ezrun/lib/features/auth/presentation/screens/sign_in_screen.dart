@@ -9,10 +9,10 @@ import '../../../../core/services/error_handler.dart';
 import 'email_otp_screen.dart';
 import '../widgets/auth_components.dart';
 
-/// "Welcome / Sign In" screen with stunning animated visuals.
+/// Auth screen with "Continue with email" and "Continue with Google".
 ///
-/// Tapping "Sign in" opens an email/password bottom sheet so we keep full
-/// sign-in functionality while preserving the 3 visible screens requested.
+/// Tapping "Continue with email" opens an email-only bottom sheet.
+/// After entering email, the user is redirected to the OTP screen.
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
 
@@ -65,29 +65,20 @@ class _SignInScreenState extends State<SignInScreen>
     }
   }
 
-  Future<void> _openEmailSignInSheet() async {
+  Future<void> _openEmailSheet() async {
     if (_isLoading) return;
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => _EmailSignInSheet(
+      builder: (ctx) => _EmailSheet(
         authService: _authService,
-        onSignedIn: () {
-          if (!mounted) return;
-          Navigator.of(ctx).pop();
-          context.go('/');
-        },
-        onNeedsOtp: (email, password) {
+        onOtpSent: (email) {
           if (!mounted) return;
           Navigator.of(ctx).pop();
           context.go(
             '/email-otp',
-            extra: EmailOtpArgs(
-              email: email,
-              password: password,
-              isSignUp: false,
-            ),
+            extra: EmailOtpArgs(email: email),
           );
         },
       ),
@@ -200,8 +191,6 @@ class _SignInScreenState extends State<SignInScreen>
                   AuthTopBar(
                     title: '',
                     onBack: null,
-                    trailingText: 'Skip',
-                    onTrailing: _openEmailSignInSheet,
                     foreground: colors.textPrimary,
                   ).animate().fadeIn(duration: 400.ms),
 
@@ -275,7 +264,7 @@ class _SignInScreenState extends State<SignInScreen>
 
                   // ── Greeting text ──
                   Text(
-                    'Welcome Back!',
+                    'Welcome to EZRUN',
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w800,
@@ -295,7 +284,7 @@ class _SignInScreenState extends State<SignInScreen>
                   const SizedBox(height: 8),
 
                   Text(
-                    'Sign in to continue your run',
+                    'Sign in or create an account to continue',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
@@ -311,12 +300,13 @@ class _SignInScreenState extends State<SignInScreen>
                         curve: Curves.easeOut,
                       ),
 
-                  const SizedBox(height: 36),
+                  const Spacer(),
 
-                  // ── Sign in button with glow ──
+                  // ── Continue with email ──
                   _GlowButton(
-                    text: 'Sign In',
-                    onPressed: _openEmailSignInSheet,
+                    text: 'Continue with Email',
+                    icon: Icons.email_outlined,
+                    onPressed: _openEmailSheet,
                     glowColor: colors.accentPrimary,
                     backgroundColor: colors.accentPrimary,
                     foregroundColor:
@@ -333,71 +323,7 @@ class _SignInScreenState extends State<SignInScreen>
 
                   const SizedBox(height: 14),
 
-                  // ── Sign up outline button ──
-                  AuthOutlinePillButton(
-                    text: 'Create Account',
-                    onPressed: () => context.push('/sign-up'),
-                  )
-                      .animate()
-                      .fadeIn(delay: 550.ms, duration: 500.ms)
-                      .slideY(
-                        begin: 0.2,
-                        end: 0,
-                        duration: 500.ms,
-                        curve: Curves.easeOut,
-                      ),
-
-                  const SizedBox(height: 24),
-
-                  // ── Divider with "or" ──
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.transparent,
-                                colors.borderStrong,
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16),
-                        child: Text(
-                          'or',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: colors.textMuted,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                colors.borderStrong,
-                                Colors.transparent,
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                      .animate()
-                      .fadeIn(delay: 650.ms, duration: 400.ms),
-
-                  const SizedBox(height: 20),
-
-                  // ── Google button ──
+                  // ── Continue with Google ──
                   AuthOutlinePillButton(
                     text: 'Continue with Google',
                     onPressed:
@@ -409,47 +335,32 @@ class _SignInScreenState extends State<SignInScreen>
                     ),
                   )
                       .animate()
-                      .fadeIn(delay: 750.ms, duration: 500.ms)
+                      .fadeIn(delay: 550.ms, duration: 500.ms)
                       .slideY(
-                        begin: 0.15,
+                        begin: 0.2,
                         end: 0,
                         duration: 500.ms,
                         curve: Curves.easeOut,
                       ),
 
-                  const Spacer(),
+                  const SizedBox(height: 32),
 
                   // ── Footer ──
                   Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          "Don't have an account?",
-                          style: TextStyle(
-                            color: colors.textSecondary,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 13,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () => context.push('/sign-up'),
-                          child: Text(
-                            'Sign Up',
-                            style: TextStyle(
-                              color: colors.accentPrimary,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      'By continuing, you agree to our Terms & Privacy Policy',
+                      style: TextStyle(
+                        color: colors.textMuted,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   )
                       .animate()
-                      .fadeIn(delay: 850.ms, duration: 500.ms),
+                      .fadeIn(delay: 650.ms, duration: 500.ms),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
@@ -460,9 +371,10 @@ class _SignInScreenState extends State<SignInScreen>
   }
 }
 
-/// A pill button wrapped with a subtle glow behind it.
+/// A pill button wrapped with a subtle glow and an optional leading icon.
 class _GlowButton extends StatelessWidget {
   final String text;
+  final IconData? icon;
   final VoidCallback? onPressed;
   final Color glowColor;
   final Color backgroundColor;
@@ -470,6 +382,7 @@ class _GlowButton extends StatelessWidget {
 
   const _GlowButton({
     required this.text,
+    this.icon,
     required this.onPressed,
     required this.glowColor,
     required this.backgroundColor,
@@ -490,78 +403,82 @@ class _GlowButton extends StatelessWidget {
           ),
         ],
       ),
-      child: AuthPillButton(
-        text: text,
-        onPressed: onPressed,
-        backgroundColor: backgroundColor,
-        foregroundColor: foregroundColor,
+      child: SizedBox(
+        height: 54,
+        width: double.infinity,
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: backgroundColor,
+            foregroundColor: foregroundColor,
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(100),
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 20),
+                const SizedBox(width: 10),
+              ],
+              Text(
+                text,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────
-// Email Sign-In Bottom Sheet (glass-morphism styled)
+// Email Bottom Sheet (email-only, sends OTP)
 // ─────────────────────────────────────────────────────────
 
-class _EmailSignInSheet extends StatefulWidget {
+class _EmailSheet extends StatefulWidget {
   final AuthService authService;
-  final VoidCallback onSignedIn;
-  final void Function(String email, String password) onNeedsOtp;
+  final void Function(String email) onOtpSent;
 
-  const _EmailSignInSheet({
+  const _EmailSheet({
     required this.authService,
-    required this.onSignedIn,
-    required this.onNeedsOtp,
+    required this.onOtpSent,
   });
 
   @override
-  State<_EmailSignInSheet> createState() => _EmailSignInSheetState();
+  State<_EmailSheet> createState() => _EmailSheetState();
 }
 
-class _EmailSignInSheetState extends State<_EmailSignInSheet> {
+class _EmailSheetState extends State<_EmailSheet> {
   final _formKey = GlobalKey<FormState>();
   final _email = TextEditingController();
-  final _password = TextEditingController();
   bool _isLoading = false;
-  bool _obscure = true;
 
   @override
   void dispose() {
     _email.dispose();
-    _password.dispose();
     super.dispose();
   }
 
-  Future<void> _signIn() async {
+  Future<void> _continue() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
     final email = _email.text.trim();
-    final password = _password.text;
 
     try {
-      await widget.authService.signIn(email: email, password: password);
-      widget.onSignedIn();
+      await widget.authService.initiateEmailAuth(email: email);
+      widget.onOtpSent(email);
     } catch (e) {
-      final msg = e.toString().toLowerCase();
-      final needsEmailVerification =
-          msg.contains('verify') && msg.contains('email');
-      if (needsEmailVerification) {
-        try {
-          widget.authService.stageSupabaseSyncForOtp(
-            email: email,
-            password: password,
-          );
-          await widget.authService.sendEmailOtp(email: email);
-        } catch (_) {
-          // Ignore — sign-in may have already sent it.
-        }
-        widget.onNeedsOtp(email, password);
-        return;
-      }
       if (mounted) {
-        ErrorHandler.handleException(context, e, title: 'Sign In Failed');
+        ErrorHandler.handleException(context, e, title: 'Failed');
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -626,7 +543,7 @@ class _EmailSignInSheetState extends State<_EmailSignInSheet> {
                 ),
               ),
               Text(
-                'Sign In',
+                'Enter your email',
                 style: TextStyle(
                   color: colors.textPrimary,
                   fontSize: 22,
@@ -638,6 +555,18 @@ class _EmailSignInSheetState extends State<_EmailSignInSheet> {
                   .animate()
                   .fadeIn(duration: 300.ms)
                   .slideY(begin: -0.1, end: 0, duration: 300.ms),
+              const SizedBox(height: 6),
+              Text(
+                "We'll send you a verification code",
+                style: TextStyle(
+                  color: colors.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              )
+                  .animate()
+                  .fadeIn(delay: 50.ms, duration: 300.ms),
               const SizedBox(height: 20),
               AuthField(
                 label: 'Email Address',
@@ -645,7 +574,8 @@ class _EmailSignInSheetState extends State<_EmailSignInSheet> {
                 controller: _email,
                 icon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
-                textInputAction: TextInputAction.next,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _continue(),
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) {
                     return 'Email is required';
@@ -654,55 +584,15 @@ class _EmailSignInSheetState extends State<_EmailSignInSheet> {
                   return null;
                 },
               ).animate().fadeIn(delay: 100.ms, duration: 300.ms),
-              const SizedBox(height: 16),
-              AuthField(
-                label: 'Password',
-                hint: 'Enter your password',
-                controller: _password,
-                icon: Icons.lock_outline,
-                obscureText: _obscure,
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _signIn(),
-                suffix: IconButton(
-                  onPressed: () => setState(() => _obscure = !_obscure),
-                  icon: Icon(
-                    _obscure ? Icons.visibility_off : Icons.visibility,
-                    color: colors.textMuted,
-                  ),
-                ),
-                validator: (v) {
-                  if (v == null || v.isEmpty) return 'Password is required';
-                  return null;
-                },
-              ).animate().fadeIn(delay: 200.ms, duration: 300.ms),
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: _isLoading
-                      ? null
-                      : () => context.push('/forgot-password'),
-                  child: Text(
-                    'Forgot Password?',
-                    style: TextStyle(
-                      color: colors.accentPrimary,
-                      fontWeight: FontWeight.w700,
-                      decoration: TextDecoration.underline,
-                      decorationColor:
-                          colors.accentPrimary.withOpacity(0.45),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 20),
               _GlowButton(
-                text: 'Sign In',
-                onPressed: _signIn,
+                text: _isLoading ? '' : 'Continue',
+                onPressed: _isLoading ? null : _continue,
                 glowColor: colors.accentPrimary,
                 backgroundColor: colors.accentPrimary,
                 foregroundColor:
                     Theme.of(context).colorScheme.onPrimary,
-              ).animate().fadeIn(delay: 300.ms, duration: 400.ms),
+              ).animate().fadeIn(delay: 200.ms, duration: 400.ms),
             ],
           ),
         ),
