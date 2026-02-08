@@ -13,7 +13,9 @@ const trustedOrigins = (process.env.TRUSTED_ORIGINS ?? "")
   .split(",")
   .map((item) => item.trim())
   .filter((item) => item.length > 0);
-const allowNoOrigin = process.env.ALLOW_NO_ORIGIN === "true";
+// Mobile/native clients often do not send the Origin header.
+// Allow by default, and let deployments explicitly disable if needed.
+const allowNoOrigin = process.env.ALLOW_NO_ORIGIN !== "false";
 
 // ===== REQUEST LOGGING MIDDLEWARE =====
 app.use((req, _res, next) => {
