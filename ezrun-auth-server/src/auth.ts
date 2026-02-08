@@ -9,10 +9,28 @@ if (!databaseUrl) {
   throw new Error("DATABASE_URL is required");
 }
 
+const betterAuthSecret = process.env.BETTER_AUTH_SECRET;
+if (!betterAuthSecret) {
+  throw new Error("BETTER_AUTH_SECRET is required");
+}
+
+const betterAuthUrl = process.env.BETTER_AUTH_URL;
+if (!betterAuthUrl) {
+  throw new Error("BETTER_AUTH_URL is required");
+}
+
 const trustedOrigins = (process.env.TRUSTED_ORIGINS ?? "")
   .split(",")
   .map((origin) => origin.trim())
   .filter((origin) => origin.length > 0);
+if (trustedOrigins.length === 0) {
+  console.warn("⚠️ No TRUSTED_ORIGINS configured; cross-origin browser requests will be blocked.");
+}
+
+const disableCsrfCheck = process.env.DISABLE_CSRF_CHECK === "true";
+if (disableCsrfCheck) {
+  console.warn("⚠️ CSRF protection is disabled via DISABLE_CSRF_CHECK=true.");
+}
 
 function intFromEnv(name: string, fallback: number): number {
   const raw = process.env[name];
@@ -33,11 +51,11 @@ console.log("✅ Database pool created");
 console.log(`   Trusted origins: [${trustedOrigins.join(", ")}]`);
 
 export const auth = betterAuth({
-  secret: process.env.BETTER_AUTH_SECRET,
-  baseURL: process.env.BETTER_AUTH_URL,
+  secret: betterAuthSecret,
+  baseURL: betterAuthUrl,
   trustedOrigins,
   advanced: {
-    disableCSRFCheck: true, // Disable CSRF for mobile apps
+    disableCSRFCheck: disableCsrfCheck, // Enable only when explicitly configured.
   },
   database: pool,
   emailAndPassword: {

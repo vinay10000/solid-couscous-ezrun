@@ -8,6 +8,12 @@ import { auth } from "./auth.js";
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
 const host = "0.0.0.0"; // Listen on all network interfaces
+const isProduction = process.env.NODE_ENV === "production";
+const trustedOrigins = (process.env.TRUSTED_ORIGINS ?? "")
+  .split(",")
+  .map((item) => item.trim())
+  .filter((item) => item.length > 0);
+const allowNoOrigin = process.env.ALLOW_NO_ORIGIN === "true";
 
 // ===== REQUEST LOGGING MIDDLEWARE =====
 app.use((req, _res, next) => {
@@ -22,14 +28,19 @@ app.use((req, _res, next) => {
 app.use(
   cors({
     origin: (origin, callback) => {
-      const trusted = (process.env.TRUSTED_ORIGINS ?? "")
-        .split(",")
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0);
+      console.log(
+        `CORS check - Origin: ${origin || "(no origin)"}, Trusted: [${trustedOrigins.join(", ")}]`
+      );
 
-      console.log(`CORS check - Origin: ${origin || "(no origin)"}, Trusted: [${trusted.join(", ")}]`);
+      if (!origin) {
+        if (allowNoOrigin) {
+          return callback(null, true);
+        }
+        console.error("❌ CORS BLOCKED: Missing Origin header");
+        return callback(new Error("Origin header required"));
+      }
 
-      if (!origin || trusted.includes(origin)) {
+      if (trustedOrigins.includes(origin)) {
         return callback(null, true);
       }
       
@@ -56,7 +67,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   console.error("  Stack:", err.stack);
   
   res.status(err.status || 500).json({
-    error: err.message || "Internal Server Error",
+    error: isProduction ? "Internal Server Error" : err.message || "Internal Server Error",
     path: req.url
   });
 });
