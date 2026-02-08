@@ -69,8 +69,11 @@ export const auth = betterAuth({
             sendVerificationOnSignUp: true,
             async sendVerificationOTP({ email, otp, type }) {
                 console.log(`📧 Sending OTP email to ${email} (${type})`);
-                await sendOtpEmail({ to: email, otp, type });
-                console.log(`✅ OTP email sent successfully to ${email}`);
+                // Avoid awaiting to reduce timing side-channels; log failures.
+                void sendOtpEmail({ to: email, otp, type }).catch((err) => {
+                    console.error("❌ Failed to send OTP email:", err.message);
+                    console.error("   Full error:", err);
+                });
             }
         })
     ]

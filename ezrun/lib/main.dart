@@ -111,7 +111,7 @@ Future<String> _resolveBetterAuthBaseUrl() async {
   final envUrl = dotenv.maybeGet('BETTER_AUTH_BASE_URL') ??
       const String.fromEnvironment(
         'BETTER_AUTH_BASE_URL',
-        defaultValue: 'http://localhost:3000/api/auth',
+        defaultValue: 'https://solid-couscous-ezrun.onrender.com/api/auth',
       );
 
   if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {

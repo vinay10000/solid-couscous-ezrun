@@ -45,7 +45,7 @@ abstract class ApiConstants {
   /// Better Auth base URL (include `/api/auth`)
   static String get betterAuthBaseUrl => _env(
     'BETTER_AUTH_BASE_URL',
-    'http://localhost:3000/api/auth',
+    'https://solid-couscous-ezrun.onrender.com/api/auth',
   );
 
   /// Better Auth callback scheme (used for social sign-in)
