@@ -150,23 +150,34 @@ class AuthService {
   /// 3. Stage Supabase sync credentials for after OTP verification.
   Future<void> initiateEmailAuth({required String email}) async {
     final generatedPassword = const Uuid().v4();
+    final defaultName = email.split('@').first;
 
     try {
       // Attempt sign-up (creates account + sends OTP for new users)
       await signUp(
         email: email,
         password: generatedPassword,
-        username: 'Runner',
+        username: defaultName,
       );
       // signUp already stages Supabase sync
     } catch (e) {
-      // User likely already exists — just send OTP
-      await sendEmailOtp(email: email);
-      _stageSupabaseSyncForOtp(
-        email: email,
-        password: generatedPassword,
-        username: _currentUser?.name ?? 'Runner',
-      );
+      final msg = e.toString().toLowerCase();
+      // If user already exists, just send OTP
+      if (msg.contains('already') ||
+          msg.contains('exists') ||
+          msg.contains('duplicate') ||
+          msg.contains('registered') ||
+          msg.contains('sign up failed')) {
+        await sendEmailOtp(email: email);
+        _stageSupabaseSyncForOtp(
+          email: email,
+          password: generatedPassword,
+          username: _currentUser?.name ?? defaultName,
+        );
+      } else {
+        // Re-throw unexpected errors (network, validation, etc.)
+        rethrow;
+      }
     }
   }
 
