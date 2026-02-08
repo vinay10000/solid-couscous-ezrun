@@ -8,7 +8,6 @@ import '../services/auth_service.dart';
 
 // Placeholder screens - will be replaced as we implement each feature
 import '../../features/auth/presentation/screens/sign_in_screen.dart';
-import '../../features/auth/presentation/screens/sign_up_screen.dart';
 import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../../features/auth/presentation/screens/email_otp_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
@@ -61,7 +60,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isOnboardingRoute = path == '/onboarding';
       final isAuthRoute =
           path == '/sign-in' ||
-          path == '/sign-up' ||
           path == '/forgot-password';
       final isOtpRoute = path == '/email-otp';
 
@@ -124,16 +122,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       GoRoute(
-        path: '/sign-up',
-        name: 'signUp',
-        pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
-          child: const SignUpScreen(),
-          transitionsBuilder: fadeTransition,
-        ),
-      ),
-
-      GoRoute(
         path: '/email-otp',
         name: 'emailOtp',
         pageBuilder: (context, state) {
@@ -148,7 +136,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           return CustomTransitionPage(
             key: state.pageKey,
             child: const EmailOtpScreen(
-              args: EmailOtpArgs(email: '', password: null, isSignUp: false),
+              args: EmailOtpArgs(email: ''),
             ),
             transitionsBuilder: fadeTransition,
           );
