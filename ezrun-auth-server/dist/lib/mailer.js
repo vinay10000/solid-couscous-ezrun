@@ -21,7 +21,8 @@ transporter.verify().then(() => {
     console.log("✅ SMTP connection verified");
 }).catch((err) => {
     console.error("❌ SMTP connection failed:", err.message);
-    console.error("   Emails will not be delivered. Check SMTP_USER and SMTP_PASS.");
+    console.error("   Server will continue but OTP emails will fail to send.");
+    console.error("   Check SMTP_USER and SMTP_PASS (Gmail requires an App Password).");
 });
 export async function sendOtpEmail(args) {
     const from = process.env.SMTP_FROM ?? `"EZRUN" <${smtpUser}>`;
