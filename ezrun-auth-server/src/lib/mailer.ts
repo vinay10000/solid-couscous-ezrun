@@ -19,6 +19,14 @@ export const transporter = nodemailer.createTransport({
   },
 });
 
+// Verify SMTP connection at startup so credential/config issues surface early.
+transporter.verify().then(() => {
+  console.log("✅ SMTP connection verified");
+}).catch((err: any) => {
+  console.error("❌ SMTP connection failed:", err.message);
+  console.error("   Emails will not be delivered. Check SMTP_USER and SMTP_PASS.");
+});
+
 type OtpEmailType = "sign-in" | "email-verification" | "forget-password";
 
 export async function sendOtpEmail(args: {
