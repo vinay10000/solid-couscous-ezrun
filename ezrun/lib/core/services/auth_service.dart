@@ -146,16 +146,26 @@ class AuthService {
     required String email,
     String type = 'email-verification',
   }) async {
-    final result = await FlutterBetterAuth.client.emailOtp.sendVerification(
-      email: email,
-      type: type,
-    ).timeout(
-      const Duration(seconds: 30),
-      onTimeout: () {
-        throw Exception('Connection timed out. Please check your internet and try again.');
-      },
-    );
-    _requireData(result, fallback: 'Failed to send OTP. Please try again.');
+    try {
+      final result = await FlutterBetterAuth.client.emailOtp.sendVerification(
+        email: email,
+        type: type,
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Connection timed out. Please check your internet and try again.');
+        },
+      );
+      _requireData(result, fallback: 'Failed to send OTP. Please try again.');
+    } on TypeError catch (e) {
+      // The flutter_better_auth adapter can throw a TypeError when the server
+      // returns an empty/malformed error response (BetterError.message is
+      // non-nullable but null is received). Surface a user-friendly message.
+      print('⚠️ sendEmailOtp TypeError (server likely returned an error): $e');
+      throw Exception(
+        'Unable to reach authentication server. Please try again later.',
+      );
+    }
   }
 
   /// Passwordless email auth: sends a sign-in OTP to the user.

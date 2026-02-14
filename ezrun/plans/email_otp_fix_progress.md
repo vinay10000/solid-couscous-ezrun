@@ -33,14 +33,25 @@ Even registered users can't get an OTP sent to their email.
 | `src/auth.ts` | ✅ Done | Added `ssl: { rejectUnauthorized: false }` to Pool config; added DB connectivity check |
 | `dist/auth.js` | ✅ Done | Rebuilt from TypeScript source |
 
+### 3. Flutter Client - TypeError on server errors (FIXED)
+- **Issue**: `flutter_better_auth` adapter throws `TypeError` when server returns 500 with 
+  empty body (`BetterError.message` is non-nullable but receives null).
+- **Fix**: Added `on TypeError catch` in `sendEmailOtp` to surface a user-friendly message.
+- Error message: "Unable to reach authentication server. Please try again later."
+
 ## What's Left
 
-### Deploy auth server to Render
-The Render deployment still has the old code without the SSL fix. Push the changes and 
-Render will auto-deploy (if connected to the git repo), or manually redeploy.
+### CRITICAL: Deploy auth server to Render
+The Render deployment **hangs on all auth requests** because the database pool lacks SSL.
+The Render server can't connect to Supabase's connection pooler without `ssl: { rejectUnauthorized: false }`.
 
-### Test end-to-end
-1. After deploying, test "Continue with Email" with a registered email
+**To deploy:**
+1. Push the changes to the git repo that Render is connected to
+2. Render will auto-deploy, OR manually trigger a deploy from the Render dashboard
+3. After deploy, verify: the server logs should show "✅ Database pool created and connection verified"
+
+### Test end-to-end (after deploy)
+1. Test "Continue with Email" with a registered email
 2. Verify OTP is received in email
 3. Enter OTP and verify user is signed in with a session
 4. Test with a new/unregistered email (should auto-create account)
@@ -51,3 +62,8 @@ Render will auto-deploy (if connected to the git repo), or manually redeploy.
 - ✅ OTP email sent successfully to `pearlsurprising@dollicons.com` via local server
 - ✅ Server returns `{"success": true}` for sign-in OTP request
 - ✅ No linter errors in Flutter code
+
+## Confirmed: Render server hanging
+- `GET /health` → 200 OK (no database involved)
+- `POST /api/auth/email-otp/send-verification-otp` → **hangs, 60s timeout** (database query fails)
+- Root cause: `pg.Pool` without SSL cannot connect to Supabase pooler from Render's infrastructure
