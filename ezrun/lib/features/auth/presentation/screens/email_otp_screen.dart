@@ -453,16 +453,11 @@ class _EmailOtpScreenState extends State<EmailOtpScreen>
                       horizontal: 24,
                       vertical: 10,
                     ),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) => SingleChildScrollView(
-                        physics: const BouncingScrollPhysics(),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minHeight: constraints.maxHeight,
-                          ),
-                          child: IntrinsicHeight(
-                            child: Column(
-                              children: [
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                         Align(
                           alignment: Alignment.centerLeft,
                           child: IconButton(
@@ -642,7 +637,7 @@ class _EmailOtpScreenState extends State<EmailOtpScreen>
                             ],
                           ),
                         ),
-                        const Spacer(),
+                        const SizedBox(height: 24),
                         _fadeSlideIn(
                           animation: _keyboardIn,
                           yOffset: 18,
@@ -652,10 +647,7 @@ class _EmailOtpScreenState extends State<EmailOtpScreen>
                           ),
                         ),
                         const SizedBox(height: 12),
-                              ],
-                            ),
-                          ),
-                        ),
+                        ],
                       ),
                     ),
                   ),

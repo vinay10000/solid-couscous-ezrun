@@ -35,6 +35,14 @@ Even registered users can't get an OTP sent to their email.
   - Changed resend section from `Row` to responsive `Wrap`
   - Wrapped main content column in scrollable layout (`LayoutBuilder` + `SingleChildScrollView` + `ConstrainedBox` + `IntrinsicHeight`)
 
+### 7. OTP Screen layout assertion loop (FIXED)
+- **Issue**: Runtime layout exceptions (`RenderBox was not laid out`, `!_debugDoingThisLayout`) after the overflow patch.
+- **Root cause**: `Spacer` was used inside a `Column` placed in a `SingleChildScrollView` (unbounded height), which triggers invalid flex layout.
+- **Fix**:
+  - Removed `LayoutBuilder` + `ConstrainedBox` + `IntrinsicHeight` wrapper complexity
+  - Kept a simple `SingleChildScrollView` + `Column(mainAxisSize: MainAxisSize.min)`
+  - Replaced `Spacer()` with fixed `SizedBox(height: 24)`
+
 ### 6. Auth Server - Switched to Resend provider (FIXED IN CODE, NEED ENV)
 - **Issue**: Render cannot connect to Gmail SMTP (both ports `587` and `465` time out).
 - **Fix**:
