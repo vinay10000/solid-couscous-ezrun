@@ -19,7 +19,16 @@ class WidgetPreviewCard extends StatelessWidget {
       orElse: () => widgetThemeOptions.first,
     );
     final textSize = _textSizeFor(config.textSize);
-    final dayCount = _calculateDays(config.goalDate);
+    final goalDays = config.goalDays ?? 30;
+    final isGoalDaysMode = config.useGoalDaysMode;
+    
+    // Calculate target date based on mode
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final targetDate = isGoalDaysMode 
+        ? today.add(Duration(days: goalDays))
+        : config.goalDate;
+    final dayCount = _calculateDays(targetDate);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppSizes.radiusLg),
@@ -95,15 +104,42 @@ class WidgetPreviewCard extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  Text(
-                    dayCount.toString(),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: textSize,
-                      fontWeight: FontWeight.w800,
-                      height: 1.0,
+                  if (isGoalDaysMode) ...[
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          dayCount.toString(),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: textSize,
+                            fontWeight: FontWeight.w800,
+                            height: 1.0,
+                          ),
+                        ),
+                        Text(
+                          ' / $goalDays days',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: textSize * 0.35,
+                            fontWeight: FontWeight.w600,
+                            height: 1.0,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+                  ] else ...[
+                    Text(
+                      dayCount.toString(),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: textSize,
+                        fontWeight: FontWeight.w800,
+                        height: 1.0,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 6),
                   Text(
                     config.subtitle.isEmpty

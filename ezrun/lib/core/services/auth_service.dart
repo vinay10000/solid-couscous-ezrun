@@ -121,6 +121,11 @@ class AuthService {
       name: username?.trim().isNotEmpty == true ? username!.trim() : 'Runner',
       email: email,
       password: password,
+    ).timeout(
+      const Duration(seconds: 30),
+      onTimeout: () {
+        throw Exception('Connection timed out. Please check your internet and try again.');
+      },
     );
     _requireData(result, fallback: 'Sign up failed. Please try again.');
 
@@ -134,49 +139,124 @@ class AuthService {
     // Note: Supabase user will be created AFTER OTP verification
   }
 
-  /// Send email OTP for verification
-  Future<void> sendEmailOtp({required String email}) async {
+  /// Send email OTP for verification or sign-in.
+  ///
+  /// [type] can be 'email-verification', 'sign-in', or 'forget-password'.
+  Future<void> sendEmailOtp({
+    required String email,
+    String type = 'email-verification',
+  }) async {
     final result = await FlutterBetterAuth.client.emailOtp.sendVerification(
       email: email,
-      type: 'email-verification',
+      type: type,
+    ).timeout(
+      const Duration(seconds: 30),
+      onTimeout: () {
+        throw Exception('Connection timed out. Please check your internet and try again.');
+      },
     );
     _requireData(result, fallback: 'Failed to send OTP. Please try again.');
   }
 
-  /// Passwordless email auth: creates account if new, sends OTP.
+  /// Passwordless email auth: sends a sign-in OTP to the user.
   ///
-  /// 1. Try to sign up with a random password (new user → auto-sends OTP).
-  /// 2. If user already exists, just send OTP.
-  /// 3. Stage Supabase sync credentials for after OTP verification.
+  /// Uses `type: 'sign-in'` which works for both new and existing users.
+  /// The Better Auth `/sign-in/email-otp` endpoint auto-creates accounts
+  /// for new users when the OTP is verified.
   Future<void> initiateEmailAuth({required String email}) async {
     final generatedPassword = const Uuid().v4();
     final defaultName = email.split('@').first;
 
+    print('📧 initiateEmailAuth: Sending sign-in OTP to $email');
     try {
-      // Attempt sign-up (creates account + sends OTP for new users)
-      await signUp(
-        email: email,
-        password: generatedPassword,
-        username: defaultName,
-      );
-      // signUp already stages Supabase sync
+      await sendEmailOtp(email: email, type: 'sign-in');
+      print('✅ Sign-in OTP sent successfully to $email');
     } catch (e) {
-      final msg = e.toString().toLowerCase();
-      // If user already exists, just send OTP
-      if (msg.contains('already') ||
-          msg.contains('exists') ||
-          msg.contains('duplicate') ||
-          msg.contains('registered') ||
-          msg.contains('sign up failed')) {
-        await sendEmailOtp(email: email);
-        _stageSupabaseSyncForOtp(
-          email: email,
-          password: generatedPassword,
-          username: _currentUser?.name ?? defaultName,
-        );
-      } else {
-        // Re-throw unexpected errors (network, validation, etc.)
-        rethrow;
+      print('❌ Failed to send sign-in OTP: $e');
+      rethrow;
+    }
+
+    // Stage Supabase credentials for sync after OTP verification
+    _stageSupabaseSyncForOtp(
+      email: email,
+      password: generatedPassword,
+      username: defaultName,
+    );
+  }
+
+  /// Sign in using an email OTP (passwordless authentication).
+  ///
+  /// Calls `/sign-in/email-otp` which verifies the OTP AND creates a session.
+  /// For new users, it auto-creates the account with `emailVerified: true`.
+  Future<void> signInWithEmailOtp({
+    required String email,
+    required String otp,
+  }) async {
+    final result = await FlutterBetterAuth.client.emailOtp.signIn(
+      email: email,
+      otp: otp,
+    ).timeout(
+      const Duration(seconds: 30),
+      onTimeout: () {
+        throw Exception('Connection timed out. Please check your internet and try again.');
+      },
+    );
+    _requireData(result, fallback: 'Invalid OTP. Please try again.');
+    await _refreshSession();
+
+    // Sync with Supabase after successful OTP sign-in
+    if (_pendingEmail != null && _pendingPassword != null) {
+      print('🔐 Syncing Supabase account after OTP sign-in...');
+      try {
+        final pendingName = _pendingUsername?.trim();
+        final currentName = _currentUser?.name.trim();
+        final stagedName = (pendingName != null && pendingName.isNotEmpty)
+            ? pendingName
+            : (currentName != null && currentName.isNotEmpty)
+                ? currentName
+                : 'Runner';
+
+        // Try sign-in first (existing Supabase user)
+        try {
+          final signInResponse = await _supabase.auth.signInWithPassword(
+            email: _pendingEmail!,
+            password: _pendingPassword!,
+          );
+          print('✅ Signed into existing Supabase account: ${signInResponse.user?.email}');
+        } catch (_) {
+          // Supabase user doesn't exist yet - create one
+          print('📝 Creating new Supabase account...');
+          final signUpResponse = await _supabase.auth.signUp(
+            email: _pendingEmail!,
+            password: _pendingPassword!,
+            data: {'name': stagedName},
+          );
+          print('✅ Supabase account created: ${signUpResponse.user?.id}');
+
+          // Sign in to get a session
+          await _supabase.auth.signInWithPassword(
+            email: _pendingEmail!,
+            password: _pendingPassword!,
+          );
+        }
+
+        // Sync user profile to public.users table
+        final userId = _supabase.auth.currentUser?.id;
+        if (userId != null) {
+          await _syncUserProfile(
+            userId: userId,
+            email: _pendingEmail!,
+            name: stagedName,
+          );
+        }
+      } catch (e) {
+        print('⚠️ Supabase sync after OTP sign-in failed: $e');
+        // Don't throw - Better Auth session is valid, Supabase sync is secondary
+        // User can still use the app; Supabase sync will be retried on next sign-in
+      } finally {
+        _pendingEmail = null;
+        _pendingPassword = null;
+        _pendingUsername = null;
       }
     }
   }

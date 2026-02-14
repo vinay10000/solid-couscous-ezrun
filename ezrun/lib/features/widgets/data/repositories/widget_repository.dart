@@ -13,6 +13,8 @@ class WidgetRepository extends SettingsRepository {
   static const String _keySubtitle = 'widget_subtitle';
   static const String _keyThemeColor = 'widget_theme_color';
   static const String _keyTextSize = 'widget_text_size';
+  static const String _keyGoalDays = 'widget_goal_days';
+  static const String _keyUseGoalDaysMode = 'widget_use_goal_days_mode';
 
   WidgetConfig getConfig() {
     final defaults = WidgetConfig.defaults();
@@ -22,6 +24,8 @@ class WidgetRepository extends SettingsRepository {
       subtitle: prefs.getString(_keySubtitle) ?? defaults.subtitle,
       themeColor: WidgetConfig.parseTheme(prefs.getString(_keyThemeColor)),
       textSize: WidgetConfig.parseTextSize(prefs.getString(_keyTextSize)),
+      goalDays: WidgetConfig.parseGoalDays(prefs.getString(_keyGoalDays)),
+      useGoalDaysMode: WidgetConfig.parseUseGoalDaysMode(prefs.getString(_keyUseGoalDaysMode)),
     );
   }
 
@@ -31,6 +35,10 @@ class WidgetRepository extends SettingsRepository {
     await prefs.setString(_keySubtitle, config.subtitle);
     await prefs.setString(_keyThemeColor, config.themeColor.name);
     await prefs.setString(_keyTextSize, config.textSize.name);
+    if (config.goalDays != null) {
+      await prefs.setString(_keyGoalDays, config.goalDays.toString());
+    }
+    await prefs.setString(_keyUseGoalDaysMode, config.useGoalDaysMode.toString());
   }
 
   Future<void> clearConfig() async {
@@ -39,5 +47,7 @@ class WidgetRepository extends SettingsRepository {
     await prefs.remove(_keySubtitle);
     await prefs.remove(_keyThemeColor);
     await prefs.remove(_keyTextSize);
+    await prefs.remove(_keyGoalDays);
+    await prefs.remove(_keyUseGoalDaysMode);
   }
 }

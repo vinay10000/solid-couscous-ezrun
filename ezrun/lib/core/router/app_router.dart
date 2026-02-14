@@ -10,6 +10,7 @@ import '../services/auth_service.dart';
 import '../../features/auth/presentation/screens/sign_in_screen.dart';
 import '../../features/auth/presentation/screens/forgot_password_screen.dart';
 import '../../features/auth/presentation/screens/email_otp_screen.dart';
+import '../../features/auth/presentation/screens/otp_verification_success_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/map/presentation/screens/main_shell_screen.dart';
 import '../../features/map/presentation/screens/map_dashboard_screen.dart';
@@ -58,9 +59,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final path = state.uri.path;
 
       final isOnboardingRoute = path == '/onboarding';
-      final isAuthRoute =
-          path == '/sign-in' ||
-          path == '/forgot-password';
+      final isAuthRoute = path == '/sign-in' || path == '/forgot-password';
       final isOtpRoute = path == '/email-otp';
 
       // Not logged in, not on auth route, and haven't completed onboarding -> show onboarding
@@ -135,12 +134,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           }
           return CustomTransitionPage(
             key: state.pageKey,
-            child: const EmailOtpScreen(
-              args: EmailOtpArgs(email: ''),
-            ),
+            child: const EmailOtpScreen(args: EmailOtpArgs(email: '')),
             transitionsBuilder: fadeTransition,
           );
         },
+      ),
+
+      GoRoute(
+        path: '/email-otp-success',
+        name: 'emailOtpSuccess',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          child: OtpVerificationSuccessScreen(
+            email: state.uri.queryParameters['email'] ?? '',
+          ),
+          transitionsBuilder: fadeTransition,
+        ),
       ),
 
       GoRoute(

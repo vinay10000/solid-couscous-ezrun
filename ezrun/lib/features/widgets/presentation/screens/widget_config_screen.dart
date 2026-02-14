@@ -107,39 +107,123 @@ class _WidgetConfigScreenState extends ConsumerState<WidgetConfigScreen> {
             const SizedBox(height: AppSizes.sm),
             WidgetPreviewCard(config: state.config),
             const SizedBox(height: AppSizes.xl),
-            _sectionHeader('Goal Date'),
-            LiquidGlass(
-              blur: AppSizes.blurLight,
-              backgroundColor: AppColors.glassDark,
-              borderColor: AppColors.glassBorderSubtle,
-              borderRadius: AppSizes.radiusLg,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSizes.md,
-                vertical: AppSizes.md,
+            _sectionHeader('Countdown Mode'),
+            _ModeSelector(
+              isGoalDaysMode: state.config.useGoalDaysMode,
+              onChanged: controller.setUseGoalDaysMode,
+            ),
+            const SizedBox(height: AppSizes.lg),
+            if (state.config.useGoalDaysMode) ...[
+              _sectionHeader('Goal Days'),
+              LiquidGlass(
+                blur: AppSizes.blurLight,
+                backgroundColor: AppColors.glassDark,
+                borderColor: AppColors.glassBorderSubtle,
+                borderRadius: AppSizes.radiusLg,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.md,
+                  vertical: AppSizes.md,
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.flag_outlined, color: AppColors.textSecondary),
+                        const SizedBox(width: AppSizes.md),
+                        Expanded(
+                          child: Text(
+                            '${state.config.goalDays ?? 30} days',
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        GlassButton(
+                          text: 'Pick',
+                          width: 80,
+                          height: 40,
+                          onPressed: () => _selectGoalDays(context, controller),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSizes.md),
+                    Wrap(
+                      spacing: AppSizes.sm,
+                      runSpacing: AppSizes.sm,
+                      children: [7, 14, 30, 60, 90, 180, 365].map((days) {
+                        final isSelected = state.config.goalDays == days;
+                        return GestureDetector(
+                          onTap: () => controller.updateGoalDays(days),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSizes.md,
+                              vertical: AppSizes.sm,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.primary.withOpacity(0.2)
+                                  : AppColors.glassLight,
+                              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                              border: Border.all(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : AppColors.glassBorderSubtle,
+                              ),
+                            ),
+                            child: Text(
+                              '$days',
+                              style: TextStyle(
+                                color: isSelected
+                                    ? AppColors.textPrimary
+                                    : AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
               ),
-              child: Row(
-                children: [
-                  const Icon(Icons.event, color: AppColors.textSecondary),
-                  const SizedBox(width: AppSizes.md),
-                  Expanded(
-                    child: Text(
-                      DateFormat.yMMMMd().format(state.config.goalDate),
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+            ] else ...[
+              _sectionHeader('Goal Date'),
+              LiquidGlass(
+                blur: AppSizes.blurLight,
+                backgroundColor: AppColors.glassDark,
+                borderColor: AppColors.glassBorderSubtle,
+                borderRadius: AppSizes.radiusLg,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSizes.md,
+                  vertical: AppSizes.md,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.event, color: AppColors.textSecondary),
+                    const SizedBox(width: AppSizes.md),
+                    Expanded(
+                      child: Text(
+                        DateFormat.yMMMMd().format(state.config.goalDate),
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                  GlassButton(
-                    text: 'Pick Date',
-                    width: 120,
-                    height: 40,
-                    onPressed: () => _selectDate(context, controller),
-                  ),
-                ],
+                    GlassButton(
+                      text: 'Pick Date',
+                      width: 120,
+                      height: 40,
+                      onPressed: () => _selectDate(context, controller),
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
             const SizedBox(height: AppSizes.xl),
             _sectionHeader('Text'),
             LiquidGlassTextField(
@@ -227,6 +311,21 @@ class _WidgetConfigScreenState extends ConsumerState<WidgetConfigScreen> {
     );
   }
 
+  Future<void> _selectGoalDays(
+    BuildContext context,
+    WidgetConfigController controller,
+  ) async {
+    final state = ref.read(widgetConfigControllerProvider);
+    final currentDays = state.config.goalDays ?? 30;
+    final picked = await showDialog<int>(
+      context: context,
+      builder: (context) => _GoalDaysPicker(initialValue: currentDays),
+    );
+    if (picked != null) {
+      controller.updateGoalDays(picked);
+    }
+  }
+
   Future<void> _selectDate(
     BuildContext context,
     WidgetConfigController controller,
@@ -306,6 +405,170 @@ class _TextSizeSelector extends StatelessWidget {
           ),
         );
       }).toList(),
+    );
+  }
+}
+
+class _ModeSelector extends StatelessWidget {
+  final bool isGoalDaysMode;
+  final ValueChanged<bool> onChanged;
+
+  const _ModeSelector({required this.isGoalDaysMode, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.glassDark,
+        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+        border: Border.all(color: AppColors.glassBorderSubtle),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: () => onChanged(false),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: AppSizes.md),
+                decoration: BoxDecoration(
+                  color: !isGoalDaysMode
+                      ? AppColors.primary.withOpacity(0.2)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusLg - 1),
+                ),
+                child: Center(
+                  child: Text(
+                    'Goal Date',
+                    style: TextStyle(
+                      color: !isGoalDaysMode
+                          ? AppColors.textPrimary
+                          : AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => onChanged(true),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(vertical: AppSizes.md),
+                decoration: BoxDecoration(
+                  color: isGoalDaysMode
+                      ? AppColors.primary.withOpacity(0.2)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(AppSizes.radiusLg - 1),
+                ),
+                child: Center(
+                  child: Text(
+                    'Goal Days',
+                    style: TextStyle(
+                      color: isGoalDaysMode
+                          ? AppColors.textPrimary
+                          : AppColors.textSecondary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GoalDaysPicker extends StatefulWidget {
+  final int initialValue;
+
+  const _GoalDaysPicker({required this.initialValue});
+
+  @override
+  State<_GoalDaysPicker> createState() => _GoalDaysPickerState();
+}
+
+class _GoalDaysPickerState extends State<_GoalDaysPicker> {
+  late int _value;
+
+  @override
+  void initState() {
+    super.initState();
+    _value = widget.initialValue;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.backgroundSecondary,
+      title: const Text(
+        'Select Goal Days',
+        style: TextStyle(color: AppColors.textPrimary),
+      ),
+      content: SizedBox(
+        width: 200,
+        height: 200,
+        child: NumberPicker(
+          value: _value,
+          min: 1,
+          max: 365,
+          onChanged: (value) => setState(() => _value = value),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, _value),
+          child: const Text('OK'),
+        ),
+      ],
+    );
+  }
+}
+
+class NumberPicker extends StatelessWidget {
+  final int value;
+  final int min;
+  final int max;
+  final ValueChanged<int> onChanged;
+
+  const NumberPicker({
+    super.key,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.arrow_drop_up, color: AppColors.textPrimary),
+          onPressed: value < max ? () => onChanged(value + 1) : null,
+        ),
+        Text(
+          '$value',
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 48,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.arrow_drop_down, color: AppColors.textPrimary),
+          onPressed: value > min ? () => onChanged(value - 1) : null,
+        ),
+      ],
     );
   }
 }

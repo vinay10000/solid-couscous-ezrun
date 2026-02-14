@@ -88,6 +88,14 @@ class WidgetConfigController extends StateNotifier<WidgetConfigState> {
     state = state.copyWith(config: state.config.copyWith(textSize: size));
   }
 
+  void updateGoalDays(int days) {
+    state = state.copyWith(config: state.config.copyWith(goalDays: days));
+  }
+
+  void setUseGoalDaysMode(bool useGoalDaysMode) {
+    state = state.copyWith(config: state.config.copyWith(useGoalDaysMode: useGoalDaysMode));
+  }
+
   Future<void> saveConfig() async {
     state = state.copyWith(isSaving: true);
     await _repository.saveConfig(state.config);

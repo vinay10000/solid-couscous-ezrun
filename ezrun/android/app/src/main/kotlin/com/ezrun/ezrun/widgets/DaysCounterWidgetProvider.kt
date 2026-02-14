@@ -69,12 +69,33 @@ class DaysCounterWidgetProvider : AppWidgetProvider() {
             val layoutId = resolveLayout(options)
             val views = RemoteViews(context.packageName, layoutId)
 
-            val dayCount = abs(calculateDays(config.goalDate))
+            // Calculate target date based on mode
+            val targetDate = if (config.useGoalDaysMode) {
+                val today = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 12)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                today.add(Calendar.DAY_OF_YEAR, config.goalDays)
+                val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                formatter.format(today.time)
+            } else {
+                config.goalDate
+            }
+            
+            val dayCount = abs(calculateDays(targetDate))
             val title = if (config.title.isBlank()) "DAYS" else config.title
             val subtitle = if (config.subtitle.isBlank()) "Your next goal" else config.subtitle
 
+            val daysDisplay = if (config.useGoalDaysMode) {
+                "$dayCount / ${config.goalDays} days"
+            } else {
+                dayCount.toString()
+            }
+
             views.setTextViewText(R.id.widget_title, title)
-            views.setTextViewText(R.id.widget_days_count, dayCount.toString())
+            views.setTextViewText(R.id.widget_days_count, daysDisplay)
             views.setTextViewText(R.id.widget_subtitle, subtitle)
             views.setImageViewResource(R.id.widget_icon, R.mipmap.launcher_icon)
 
