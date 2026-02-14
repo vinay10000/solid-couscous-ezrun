@@ -235,9 +235,12 @@ class _EmailOtpScreenState extends State<EmailOtpScreen>
         final slotHeight = slotWidth + 6;
         final digitSize = (slotWidth * 0.5).clamp(19.0, 24.0);
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(_otpLength, (index) {
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(_otpLength, (index) {
             final isFilled = index < _otp.length;
             final isActive = index == _otp.length && _otp.length < _otpLength;
             final borderColor = isFilled || isActive
@@ -306,7 +309,8 @@ class _EmailOtpScreenState extends State<EmailOtpScreen>
                 ),
               ),
             );
-          }),
+            }),
+          ),
         );
       },
     );
@@ -449,8 +453,16 @@ class _EmailOtpScreenState extends State<EmailOtpScreen>
                       horizontal: 24,
                       vertical: 10,
                     ),
-                    child: Column(
-                      children: [
+                    child: LayoutBuilder(
+                      builder: (context, constraints) => SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: IntrinsicHeight(
+                            child: Column(
+                              children: [
                         Align(
                           alignment: Alignment.centerLeft,
                           child: IconButton(
@@ -578,8 +590,11 @@ class _EmailOtpScreenState extends State<EmailOtpScreen>
                         _fadeSlideIn(
                           animation: _resendIn,
                           yOffset: 10,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 4,
+                            runSpacing: 2,
                             children: [
                               Text(
                                 "Didn't receive code? ",
@@ -615,15 +630,15 @@ class _EmailOtpScreenState extends State<EmailOtpScreen>
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                _canResend ? '' : _cooldownText,
-                                style: const TextStyle(
-                                  color: AppColors.textMuted,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
+                              if (!_canResend)
+                                Text(
+                                  _cooldownText,
+                                  style: const TextStyle(
+                                    color: AppColors.textMuted,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         ),
@@ -637,7 +652,11 @@ class _EmailOtpScreenState extends State<EmailOtpScreen>
                           ),
                         ),
                         const SizedBox(height: 12),
-                      ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],

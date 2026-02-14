@@ -26,6 +26,22 @@ Even registered users can't get an OTP sent to their email.
   - Added automatic fallback transport retry from port `587` (STARTTLS) to `465` (SSL)
   - Improved startup diagnostics for both primary and fallback SMTP transports
 
+### 5. OTP Screen layout overflow on device (FIXED)
+- **Issue**: `email_otp_screen.dart` overflowed on smaller device heights/widths:
+  - horizontal overflow in OTP slots/resend row
+  - bottom overflow from total fixed content height
+- **Fix**:
+  - Wrapped OTP slot row in horizontal `SingleChildScrollView`
+  - Changed resend section from `Row` to responsive `Wrap`
+  - Wrapped main content column in scrollable layout (`LayoutBuilder` + `SingleChildScrollView` + `ConstrainedBox` + `IntrinsicHeight`)
+
+### 6. Auth Server - Switched to Resend provider (FIXED IN CODE, NEED ENV)
+- **Issue**: Render cannot connect to Gmail SMTP (both ports `587` and `465` time out).
+- **Fix**:
+  - Added Resend API delivery path (`RESEND_API_KEY`, `RESEND_FROM`) as primary provider
+  - Kept SMTP as optional fallback
+  - Added provider-level error aggregation for clearer diagnostics
+
 ## Files Changed
 
 ### Flutter Client (`ezrun/`)
@@ -41,6 +57,9 @@ Even registered users can't get an OTP sent to their email.
 | `dist/auth.js` | ✅ Done | Rebuilt from TypeScript source |
 | `src/lib/mailer.ts` | ✅ Done | Added SMTP timeout config + fallback retry from 587 to 465 |
 | `dist/lib/mailer.js` | ✅ Done | Rebuilt from TypeScript source |
+| `lib/features/auth/presentation/screens/email_otp_screen.dart` | ✅ Done | Fixed horizontal and vertical overflow with responsive/scrollable layout |
+| `ezrun-auth-server/.env.example` | ✅ Done | Added Resend variables and optional SMTP fallback timeout vars |
+| `ezrun-auth-server/README.md` | ✅ Done | Updated provider setup docs (Resend-first) |
 
 ### 3. Flutter Client - TypeError on server errors (FIXED)
 - **Issue**: `flutter_better_auth` adapter throws `TypeError` when server returns 500 with 
@@ -50,16 +69,20 @@ Even registered users can't get an OTP sent to their email.
 
 ## What's Left
 
-### CRITICAL: Deploy latest SMTP resilience patch to Render
-Database connectivity is now healthy on Render, but SMTP to Gmail is timing out.
-The latest patch adds quick-fail SMTP timeouts and fallback retry to port 465.
+### CRITICAL: Configure Resend env vars on Render
+Code now supports Resend (recommended on Render), but env vars must be set.
 
-**To deploy:**
-1. Push the latest `mailer` changes to the git repo connected to Render
-2. Wait for auto-deploy / trigger manual deploy
-3. Verify logs show either:
-   - `✅ SMTP connection verified`, OR
-   - `✅ Fallback SMTP connection verified (port 465)`
+**Current status:**
+1. DB + auth server are healthy on Render
+2. Gmail SMTP is blocked/timing out on Render network
+3. Resend integration is in code and ready
+
+**Next action:**
+- Set these env vars in Render:
+  - `RESEND_API_KEY`
+  - `RESEND_FROM`
+- Optional: keep/remove SMTP vars
+- Redeploy and verify OTP delivery
 
 ### Test end-to-end (after deploy)
 1. Test "Continue with Email" with a registered email
