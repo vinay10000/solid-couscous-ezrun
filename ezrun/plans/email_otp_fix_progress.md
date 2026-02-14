@@ -19,6 +19,13 @@ Even registered users can't get an OTP sent to their email.
 - Supabase's connection pooler requires SSL from external connections (like Render).
 - Added a startup connectivity check (`SELECT 1`) to surface DB issues early.
 
+### 4. Auth Server - SMTP timeout on Render (FIXED IN CODE, NEED DEPLOY)
+- **Issue**: Render logs show `ETIMEDOUT` / `Connection timeout` when connecting to Gmail SMTP.
+- **Fix**:
+  - Added explicit SMTP timeouts (`connectionTimeout`, `greetingTimeout`, `socketTimeout`)
+  - Added automatic fallback transport retry from port `587` (STARTTLS) to `465` (SSL)
+  - Improved startup diagnostics for both primary and fallback SMTP transports
+
 ## Files Changed
 
 ### Flutter Client (`ezrun/`)
@@ -32,6 +39,8 @@ Even registered users can't get an OTP sent to their email.
 |------|--------|---------|
 | `src/auth.ts` | ✅ Done | Added `ssl: { rejectUnauthorized: false }` to Pool config; added DB connectivity check |
 | `dist/auth.js` | ✅ Done | Rebuilt from TypeScript source |
+| `src/lib/mailer.ts` | ✅ Done | Added SMTP timeout config + fallback retry from 587 to 465 |
+| `dist/lib/mailer.js` | ✅ Done | Rebuilt from TypeScript source |
 
 ### 3. Flutter Client - TypeError on server errors (FIXED)
 - **Issue**: `flutter_better_auth` adapter throws `TypeError` when server returns 500 with 
@@ -41,14 +50,16 @@ Even registered users can't get an OTP sent to their email.
 
 ## What's Left
 
-### CRITICAL: Deploy auth server to Render
-The Render deployment **hangs on all auth requests** because the database pool lacks SSL.
-The Render server can't connect to Supabase's connection pooler without `ssl: { rejectUnauthorized: false }`.
+### CRITICAL: Deploy latest SMTP resilience patch to Render
+Database connectivity is now healthy on Render, but SMTP to Gmail is timing out.
+The latest patch adds quick-fail SMTP timeouts and fallback retry to port 465.
 
 **To deploy:**
-1. Push the changes to the git repo that Render is connected to
-2. Render will auto-deploy, OR manually trigger a deploy from the Render dashboard
-3. After deploy, verify: the server logs should show "✅ Database pool created and connection verified"
+1. Push the latest `mailer` changes to the git repo connected to Render
+2. Wait for auto-deploy / trigger manual deploy
+3. Verify logs show either:
+   - `✅ SMTP connection verified`, OR
+   - `✅ Fallback SMTP connection verified (port 465)`
 
 ### Test end-to-end (after deploy)
 1. Test "Continue with Email" with a registered email
@@ -67,3 +78,8 @@ The Render server can't connect to Supabase's connection pooler without `ssl: { 
 - `GET /health` → 200 OK (no database involved)
 - `POST /api/auth/email-otp/send-verification-otp` → **hangs, 60s timeout** (database query fails)
 - Root cause: `pg.Pool` without SSL cannot connect to Supabase pooler from Render's infrastructure
+
+## Latest Render status (from logs)
+- ✅ Service boots and DB verifies: `✅ Database pool created and connection verified`
+- ✅ OTP endpoint is hit and attempts to send OTP
+- ❌ Gmail SMTP currently times out (`ETIMEDOUT`, `Connection timeout`)
