@@ -36,12 +36,22 @@ function intFromEnv(name, fallback) {
         return fallback;
     return Math.floor(value);
 }
-// Create database pool with error handling
-const pool = new Pool({ connectionString: databaseUrl });
+// Create database pool with error handling.
+// Supabase's connection pooler requires SSL connections.
+const pool = new Pool({
+    connectionString: databaseUrl,
+    ssl: { rejectUnauthorized: false },
+});
 pool.on("error", (err) => {
     console.error("❌ Unexpected database pool error:", err);
 });
-console.log("✅ Database pool created");
+// Verify database connectivity on startup
+pool.query("SELECT 1").then(() => {
+    console.log("✅ Database pool created and connection verified");
+}).catch((err) => {
+    console.error("❌ Database connection FAILED:", err.message);
+    console.error("   Auth operations will fail until the database is accessible.");
+});
 console.log(`   Trusted origins: [${trustedOrigins.join(", ")}]`);
 export const auth = betterAuth({
     secret: betterAuthSecret,
